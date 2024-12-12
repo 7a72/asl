@@ -1,0 +1,7 @@
+id=asl_x
+name=Android Subsystem for Linux
+version=_ASL_VERSION
+versionCode=_ASL_VERSION_CODE
+author=Ryhoaca
+description=Android Subsystem for Linux (lol)
+updateJson=https://raw.githubusercontent.com/7a72/asl/main/update.json
