@@ -22,10 +22,23 @@ fi
 
 ui_print "- Extracting asl add-ons"
 
-[ -d "${ASL_WORK_DIR}" ] || mkdir -p "${ASL_WORK_DIR}"
-[ -d "${ASL_WORK_DIR}/asl_tools" ] && rm -rf "${ASL_WORK_DIR:?}/asl_tools" ; mkdir -p "${ASL_WORK_DIR}/asl_tools"
-[ -d "${ASL_WORK_DIR}/fs" ] || mkdir -p "${ASL_WORK_DIR}/fs"
-[ -d "${ASL_WORK_DIR}/log" ] || mkdir -p "${ASL_WORK_DIR}/log"
+mkdir -p "${ASL_WORK_DIR}"
+mkdir -p "${ASL_WORK_DIR}/fs"
+mkdir -p "${ASL_WORK_DIR}/log"
+
+if [ -d "${ASL_WORK_DIR}/asl_tools" ]; then
+    rm -rf "${ASL_WORK_DIR}/asl_tools"
+    mkdir -p "${ASL_WORK_DIR}/asl_tools"
+  else
+    mkdir -p "${ASL_WORK_DIR}/asl_tools"
+fi
+
+if [ -f "${ASL_WORK_DIR}/asl.conf" ]; then
+    # "File exists"
+    :
+else
+    cp "${TMPDIR}/asl.conf" "${ASL_WORK_DIR}/asl.conf"
+fi
 
 tar zxf "${TMPDIR}/asl_tools.tgz" -C "${ASL_WORK_DIR}/asl_tools"
 
