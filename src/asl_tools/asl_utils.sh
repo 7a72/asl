@@ -128,7 +128,7 @@ asl_exec()
     asl_msg "exec: $*"
     unset TMP TEMP TMPDIR LD_PRELOAD LD_DEBUG
     _PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-    if [ -f "${ASL_FS}/bin/su" ] ; then
+    if [ -h "${ASL_FS}/bin/su" ] || [ -e "${ASL_FS}/bin/su" ] ; then
         PATH=${_PATH} ${ASL_UNSHARE} -R "${ASL_FS}" /bin/su - root -c "$*"
     else
         PATH=${_PATH} ${ASL_UNSHARE} -R "${ASL_FS}" $(${ASL_BUSYBOX} grep "^root:" "${ASL_FS}/etc/passwd" | cut -d ':' -f 7) -c "$*"
@@ -141,7 +141,7 @@ asl_login()
     asl_msg "login"
     unset TMP TEMP TMPDIR LD_PRELOAD LD_DEBUG
     _PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-    if [ -f "${ASL_FS}/bin/su" ] ; then
+    if [ -h "${ASL_FS}/bin/su" ] || [ -e "${ASL_FS}/bin/su" ] ; then
         PATH=${_PATH} ${ASL_UNSHARE} -R "${ASL_FS}" /bin/su - root
     else
         PATH=${_PATH} ${ASL_UNSHARE} -R "${ASL_FS}" $(${ASL_BUSYBOX} grep "^root:" "${ASL_FS}/etc/passwd" | cut -d ':' -f 7) -l
