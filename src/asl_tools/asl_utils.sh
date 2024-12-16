@@ -68,7 +68,7 @@ mount_status()
 asl_mount()
 {
     asl_msg "Mount: ${ASL_FS}"
-    for _asl_mount_point in / /dev /proc /sys /dev/shm /dev/pts ;
+    for _asl_mount_point in / /dev /proc /sys /tmp /dev/pts /dev/shm ;
     do
         if ! mount_status "${ASL_FS}${_asl_mount_point}"; then
             case ${_asl_mount_point} in
@@ -92,11 +92,9 @@ asl_mount()
                     ${ASL_TOOLS_DIR}/mount -t sysfs sys "${ASL_FS}/sys"
                     asl_msg "Mounting ${_asl_mount_point} completed"
                 ;;
-                /dev/shm)
-                    [ -d "/dev/shm" ] || ${ASL_BUSYBOX} mkdir -p /dev/shm
-                    ${ASL_TOOLS_DIR}/mount -o rw,nosuid,nodev,mode=1777 -t tmpfs tmpfs /dev/shm
-                    [ -d "${ASL_FS}/dev/shm" ] || ${ASL_BUSYBOX} mkdir -p "${ASL_FS}/dev/shm"
-                    ${ASL_TOOLS_DIR}/mount -o bind /dev/shm "${ASL_FS}/dev/shm"
+                /tmp)
+                    [ -d "${ASL_FS}/tmp" ] || ${ASL_BUSYBOX} mkdir -p "${ASL_FS}/tmp"
+                    ${ASL_TOOLS_DIR}/mount -o rw,nosuid,nodev,mode=1777 -t tmpfs tmpfs "${ASL_FS}/tmp"
                     asl_msg "Mounting ${_asl_mount_point} completed"
                 ;;
                 /dev/pts)
@@ -104,6 +102,11 @@ asl_mount()
                     ${ASL_TOOLS_DIR}/mount -o rw,nosuid,noexec,gid=5,mode=620,ptmxmode=000 -t devpts devpts /dev/pts
                     [ -d "${ASL_FS}/dev/pts" ] || ${ASL_BUSYBOX} mkdir -p "${ASL_FS}/dev/pts"
                     ${ASL_TOOLS_DIR}/mount -o bind /dev/pts "${ASL_FS}/dev/pts"
+                    asl_msg "Mounting ${_asl_mount_point} completed"
+                ;;
+                /dev/shm)
+                    [ -d "${ASL_FS}/dev/shm" ] || ${ASL_BUSYBOX} mkdir -p "${ASL_FS}/dev/shm"
+                    ${ASL_TOOLS_DIR}/mount -o rw,nosuid,nodev,mode=1777 -t tmpfs tmpfs "${ASL_FS}/dev/shm"
                     asl_msg "Mounting ${_asl_mount_point} completed"
                 ;;
             esac
@@ -125,7 +128,11 @@ asl_exec()
     asl_msg "exec: $*"
     unset TMP TEMP TMPDIR LD_PRELOAD LD_DEBUG
     _PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-    PATH=${_PATH} ${ASL_UNSHARE} -R "${ASL_FS}" /bin/su - root -c "$*"
+    if [ -f "${ASL_FS}/bin/su" ] ; then
+        PATH=${_PATH} ${ASL_UNSHARE} -R "${ASL_FS}" /bin/su - root -c "$*"
+    else
+        PATH=${_PATH} ${ASL_UNSHARE} -R "${ASL_FS}" $(${ASL_BUSYBOX} grep "^root:" "${ASL_FS}/etc/passwd" | cut -d ':' -f 7) -c "$*"
+    fi
 }
 
 asl_login()
@@ -134,7 +141,11 @@ asl_login()
     asl_msg "login"
     unset TMP TEMP TMPDIR LD_PRELOAD LD_DEBUG
     _PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-    PATH=${_PATH} ${ASL_UNSHARE} -R "${ASL_FS}" /bin/su -
+    if [ -f "${ASL_FS}/bin/su" ] ; then
+        PATH=${_PATH} ${ASL_UNSHARE} -R "${ASL_FS}" /bin/su - root
+    else
+        PATH=${_PATH} ${ASL_UNSHARE} -R "${ASL_FS}" $(${ASL_BUSYBOX} grep "^root:" "${ASL_FS}/etc/passwd" | cut -d ':' -f 7) -l
+    fi
 }
 
 path_check() {
@@ -312,7 +323,8 @@ asl_net_fix()
     groupadd aid_net_admin -g 3005
     groupadd aid_net_bw_stats -g 3006
     groupadd aid_net_bw_acct -g 3007
-    usermod -a -G aid_net_bt_admin,aid_net_bt,aid_inet,aid_net_raw,aid_admin,aid_net_bw_acct,aid_net_bw_acct root
+
+    usermod -a -G aid_net_bt_admin,aid_net_bt,aid_inet,aid_net_raw,aid_net_admin,aid_net_bw_stats,aid_net_bw_acct root
 
     rm -f /etc/resolv.conf >>/dev/null 2>&1
     echo nameserver 8.8.8.8 >>/etc/resolv.conf
